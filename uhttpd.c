@@ -1035,7 +1035,7 @@ int main (int argc, char **argv)
 
 			/* docroot */
 			case 'h':
-				if (! realpath(optarg, conf.docroot))
+				if (! uh_realpath(optarg, conf.docroot))
 				{
 					fprintf(stderr, "Error: Invalid directory %s: %s\n",
 							optarg, strerror(errno));
@@ -1266,7 +1266,7 @@ int main (int argc, char **argv)
 	}
 
 	/* default docroot */
-	if (!conf.docroot[0] && !realpath(".", conf.docroot))
+	if (!conf.docroot[0] && !uh_realpath(".", conf.docroot))
 	{
 		fprintf(stderr, "Error: Can not determine default document root: %s\n",
 			strerror(errno));
