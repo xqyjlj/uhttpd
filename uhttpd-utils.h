@@ -117,6 +117,9 @@ int uh_auth_check(
 );
 
 
+char * uh_realpath(const char *path, char *resolved_path);
+
+
 extern struct index_file *uh_index_files;
 struct index_file * uh_index_add(const char *filename);
 

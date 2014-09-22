@@ -483,13 +483,12 @@ static char * canonpath(const char *path, char *path_resolved)
 	/* relative -> absolute */
 	if (*path != '/')
 	{
-		getcwd(path_copy, PATH_MAX);
-		strncat(path_copy, "/", PATH_MAX - strlen(path_copy));
-		strncat(path_copy, path, PATH_MAX - strlen(path_copy));
+		getcwd(path_copy, sizeof(path_copy));
+		snprintf(path_copy, sizeof(path_copy) - strlen(path_copy), "/%s", path);
 	}
 	else
 	{
-		strncpy(path_copy, path, PATH_MAX);
+		strncpy(path_copy, path, sizeof(path_copy) - 1);
 	}
 
 	/* normalize */
@@ -541,6 +540,28 @@ static char * canonpath(const char *path, char *path_resolved)
 	/* test access */
 	if (!stat(path_resolved, &s) && (s.st_mode & S_IROTH))
 		return path_resolved;
+
+	return NULL;
+}
+
+char * uh_realpath(const char *path, char *resolved_path)
+{
+	char *res = realpath(path, NULL);
+
+	if (res && strlen(res) >= PATH_MAX)
+	{
+		free(res);
+		errno = ENAMETOOLONG;
+
+		return NULL;
+	}
+	else if (res)
+	{
+		strncpy(resolved_path, res, PATH_MAX - 1);
+		free(res);
+
+		return resolved_path;
+	}
 
 	return NULL;
 }
@@ -632,7 +653,7 @@ struct path_info * uh_path_lookup(struct client *cl, const char *url)
 			memset(path_info, 0, sizeof(path_info));
 			memcpy(path_info, buffer, min(i + 1, sizeof(path_info) - 1));
 
-			if (no_sym ? realpath(path_info, path_phys)
+			if (no_sym ? uh_realpath(path_info, path_phys)
 			           : canonpath(path_info, path_phys))
 			{
 				memset(path_info, 0, sizeof(path_info));
@@ -673,7 +694,7 @@ struct path_info * uh_path_lookup(struct client *cl, const char *url)
 
 			/* try to locate index file */
 			memset(buffer, 0, sizeof(buffer));
-			memcpy(buffer, path_phys, sizeof(buffer));
+			memcpy(buffer, path_phys, sizeof(buffer) - 1);
 			pathptr = &buffer[strlen(buffer)];
 
 			/* if requested url resolves to a directory and a trailing slash
@@ -696,7 +717,7 @@ struct path_info * uh_path_lookup(struct client *cl, const char *url)
 			{
 				for (idx = uh_index_files; idx; idx = idx->next)
 				{
-					strncat(buffer, idx->name, sizeof(buffer));
+					strncpy(pathptr, idx->name, sizeof(buffer) - (pathptr - buffer) - 1);
 
 					if (!stat(buffer, &s) && (s.st_mode & S_IFREG))
 					{
