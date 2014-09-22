@@ -283,14 +283,14 @@ static void uh_file_dirlist(struct client *cl, struct path_info *pi)
 						 alphasort)) > 0)
 	{
 		memset(filename, 0, sizeof(filename));
-		memcpy(filename, pi->phys, sizeof(filename));
+		memcpy(filename, pi->phys, sizeof(filename) - 1);
 		pathptr = &filename[strlen(filename)];
 
 		/* list subdirs */
 		for (i = 0; i < count; i++)
 		{
-			strncat(filename, files[i]->d_name,
-					sizeof(filename) - strlen(files[i]->d_name));
+			snprintf(pathptr, sizeof(filename) - (pathptr - filename),
+			         "%s", files[i]->d_name);
 
 			if (!stat(filename, &s) &&
 				(s.st_mode & S_IFDIR) && (s.st_mode & S_IXOTH))
@@ -312,8 +312,8 @@ static void uh_file_dirlist(struct client *cl, struct path_info *pi)
 		/* list files */
 		for (i = 0; i < count; i++)
 		{
-			strncat(filename, files[i]->d_name,
-					sizeof(filename) - strlen(files[i]->d_name));
+			snprintf(pathptr, sizeof(filename) - (pathptr - filename),
+			         "%s", files[i]->d_name);
 
 			if (!stat(filename, &s) &&
 				!(s.st_mode & S_IFDIR) && (s.st_mode & S_IROTH))
