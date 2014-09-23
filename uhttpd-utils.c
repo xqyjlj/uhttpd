@@ -473,7 +473,7 @@ int uh_b64decode(char *buf, int blen, const unsigned char *src, int slen)
 
 static char * canonpath(const char *path, char *path_resolved)
 {
-	char path_copy[PATH_MAX];
+	char path_copy[PATH_MAX] = { };
 	char *path_cpy = path_copy;
 	char *path_res = path_resolved;
 
@@ -483,8 +483,11 @@ static char * canonpath(const char *path, char *path_resolved)
 	/* relative -> absolute */
 	if (*path != '/')
 	{
-		getcwd(path_copy, sizeof(path_copy));
-		snprintf(path_copy, sizeof(path_copy) - strlen(path_copy), "/%s", path);
+		if (!getcwd(path_copy, sizeof(path_copy)))
+			return NULL;
+
+		snprintf(path_copy + strlen(path_copy), sizeof(path_copy) - strlen(path_copy),
+		         "/%s", path);
 	}
 	else
 	{
@@ -557,7 +560,7 @@ char * uh_realpath(const char *path, char *resolved_path)
 	}
 	else if (res)
 	{
-		strncpy(resolved_path, res, PATH_MAX - 1);
+		strncpy(resolved_path, res, PATH_MAX);
 		free(res);
 
 		return resolved_path;
